@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#4C1D95"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>MoraBilling Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --purple: #6D28D9; --font: 'Plus Jakarta Sans', sans-serif; }
+    html, body { height: 100%; background: #F3F4F6; font-family: var(--font); color: #111827; }
+    #root { height: 100%; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes pulse-bg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* padding-bottom 140px = 80 normal + 60 bottom-nav */
+    .app-wrap { width: 100%; max-width: 1200px; margin: 0 auto; padding-bottom: 140px; }
+    .top-banner { background: linear-gradient(160deg, #5B21B6, #4C1D95); padding: 16px 16px 16px; color: white; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .sticky-controls { position: sticky; top: 0; z-index: 40; background: #F3F4F6; padding: 15px 16px 5px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; margin-bottom: 16px; display: grid; gap: 10px; }
+    .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; width: 100%; }
+    .dropdown-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-bottom: 4px; }
+    .customer-grid { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 0 16px; align-items: stretch; }
+    .load-more-btn { margin: 20px 16px; padding: 14px; background: white; border: 1px dashed #D1D5DB; border-radius: 16px; color: #4B5563; font-weight: 700; text-align: center; cursor: pointer; display: block; width: calc(100% - 32px); box-sizing: border-box; }
+    .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; }
+    .modal-content { background: white; width: 100%; border-top-left-radius: 24px; border-top-right-radius: 24px; max-height: 85dvh; max-height: 85vh; overflow-y: auto; padding: 20px; padding-bottom: 48px; animation: slideUp 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+
+    /* ✅ NEW: Bottom Navigation */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #E5E7EB; display: flex; z-index: 60; height: 64px; }
+    .bottom-nav button { flex: 1; border: none; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; font-family: var(--font); }
+    .bottom-nav button:active { background: #F9FAFB; }
+
+    @media (min-width: 640px) {
+      .top-banner { border-radius: 24px; margin-top: 20px; padding: 30px; }
+      .stats-row { grid-template-columns: repeat(2, 220px); justify-content: flex-start; }
+      .sticky-controls { grid-template-columns: 2fr 3fr; padding: 20px; border-radius: 16px; margin: 20px 16px; align-items: center; }
+      .dropdown-row { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; max-width: 400px; }
+      .customer-grid { grid-template-columns: repeat(2, 1fr); padding: 0 20px; }
+      .load-more-btn { width: calc(100% - 40px); margin: 20px auto; max-width: 400px; }
+      .modal-overlay { align-items: center; padding: 20px; }
+      .modal-content { max-width: 500px; border-radius: 24px; animation: fadeIn 0.3s ease forwards; }
+
+      /* ✅ NEW: Bottom nav jadi floating pill di tablet/desktop — tidak stretch edge-to-edge */
+      .bottom-nav { left: 50%; right: auto; transform: translateX(-50%); bottom: 20px; width: auto; min-width: 380px; height: 58px; border-radius: 20px; border: 1px solid #E5E7EB; box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+      .bottom-nav button { flex: 0 1 130px; flex-direction: row; gap: 8px; padding: 0 16px; }
+
+      /* ✅ NEW: Konten form/list lebih sempit di layar lebar — tidak stretch 1200px penuh */
+      .content-wrap { max-width: 720px; margin: 0 auto; }
+    }
+    @media (min-width: 1024px) {
+      .customer-grid { grid-template-columns: repeat(3, 1fr); }
+      .sticky-controls { grid-template-columns: 2fr 3fr 2fr; }
+      .dropdown-row { grid-column: auto; max-width: none; }
+    }
+    @media (min-width: 1440px) {
+      .customer-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .card-enter { animation: fadeIn 0.3s ease forwards; }
+    /* ✅ NEW: FAB anchored ke viewport di mobile, ke tepi konten di desktop lebar (>1200px) */
+    .fab-btn { position: fixed; bottom: 88px; right: 20px; }
+    @media (min-width: 1240px) {
+      .fab-btn { right: calc((100vw - 1200px) / 2 + 20px); }
+    }
+    /* ✅ NEW: di tablet/desktop FAB diganti tombol berlabel di header (hindari overlap kartu) */
+    .desktop-action { display: none; }
+    @media (min-width: 640px) {
+      .fab-btn { display: none !important; }
+      .desktop-action { display: inline-flex; align-items: center; gap: 6px; }
+    }
+    .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .skeleton { background: #E5E7EB; border-radius: 8px; animation: pulse-bg 1.5s ease-in-out infinite; }
+    button { font-family: var(--font); cursor: pointer; transition: transform 0.1s; }
+    button:active { transform: scale(0.97); }
+    input, select, textarea { outline: none; font-family: var(--font); }
+    input:focus, select:focus, textarea:focus { outline: 2px solid #7C3AED; outline-offset: -1px; }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+  // ✅ NEW: Tangkap event install PWA sedini mungkin, sebelum React/Babel selesai load
+  window.__moraInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window.__moraInstallPrompt = e;
+  });
+</script>
+<script type="text/babel">
+  const { useState, useEffect, useMemo, useRef } = React;
+
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwSQpaQDRG04tBfvwZwOSL2meDZV0Ybbdfn-kHGiVllqBiImfIWxbcL6Y_6wB0sulNp/exec";
+  const STORAGE_KEY = "morabilling-pro-smart-backend";
+  const ITEM_PER_PAGE = 20;
+
+  // ✅ NEW: Keuangan constants
+  const KATEGORI_PEMASUKAN = ['Gaji Pokok', 'Insentif/Komisi', 'Upres', 'Belt', 'Lain-lain'];
+  const KATEGORI_PENGELUARAN = ['Agen', 'Teknisi', 'Cashback', 'Churn', 'Lain-lain'];
+  const BULAN_NAMES = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+  const BULAN_SHORT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+  // --- UTILITY (UNCHANGED) ---
+  const formatRupiah = (n) => "Rp " + Number(n || 0).toLocaleString("id-ID");
+  const formatNumberInput = (n) => n ? Number(n.toString().replace(/\D/g, "")).toLocaleString('id-ID') : "";
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    const m = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+    return `${d.getDate()} ${m[d.getMonth()]} ${d.getFullYear()}`;
+  };
+  const exportToCSV = (data) => {
+    const headers = ["ID Pelanggan","Nama","No WA","Tagihan Bulanan","Tanggal Pasang","Usia Berlangganan (Bulan)","Total Bayar (Bulan)","Tagihan (Bulan)","Status Pelanggan","Catatan"];
+    const rows = data.map(p => [p.customerId, p.nama, p.noWa, p.tagihan, p.joinDate, p.crm.usia, p.crm.bayar, p.crm.nunggak, p.statusKlien, `"${(p.catatan||"").replace(/"/g,'""')}"`]);
+    const csv = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(",")].concat(rows.map(e => e.join(","))).join("\n");
+    const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "MoraBilling_Export.csv";
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
+
+  // ✅ NEW: Export Keuangan CSV
+  const exportKeuanganCSV = (data, bulan, tahun) => {
+    const headers = ["Tanggal","Tipe","Kategori","ID Pelanggan","Nominal","Keterangan"];
+    const rows = data.map(k => [k.tanggal, k.tipe, k.kategori, k.idPelanggan||"", k.nominal, `"${(k.keterangan||"").replace(/"/g,'""')}"`]);
+    const csv = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(",")].concat(rows.map(r=>r.join(","))).join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `Keuangan_${BULAN_SHORT[bulan]}${tahun}.csv`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
+
+  // ✅ NEW: Export Riwayat Bayar ke CSV (per pelanggan)
+  const exportRiwayatCSV = (data, pelanggan) => {
+    const headers = ["Tanggal","Jam","Nominal","Catatan"];
+    const rows = data.map(r => {
+      const parts = String(r.timestamp||'').split(' ');
+      const tgl = parts[0] || ''; const jam = parts[1] ? parts[1].slice(0,5) : '';
+      return [tgl, jam, r.nominal, `"${(r.catatan||"").replace(/"/g,'""')}"`];
+    });
+    const csv = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(",")].concat(rows.map(r=>r.join(","))).join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = `Riwayat_${pelanggan.customerId}_${pelanggan.nama.replace(/\s+/g,'_')}.csv`;
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
+
+  // ✅ Utility: fetch dengan timeout 25 detik — kalau server tidak respon, user dapat pesan jelas
+  const fetchWithTimeout = (url, options, ms = 25000) => {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), ms);
+    return fetch(url, { ...(options||{}), signal: ctrl.signal })
+      .catch(err => { clearTimeout(t); if(err.name==='AbortError') throw new Error('Server timeout. Cek koneksi dan coba lagi.'); throw err; })
+      .finally(() => clearTimeout(t));
+  };
+
+  // --- SKELETON (UNCHANGED) ---
+  const SkeletonLoader = () => (
+    <div style={{ background: "white", padding: 20, borderRadius: 20, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+        <div><div className="skeleton" style={{ width: 80, height: 20, marginBottom: 8 }}></div><div className="skeleton" style={{ width: 140, height: 24, marginBottom: 8 }}></div><div className="skeleton" style={{ width: 100, height: 16 }}></div></div>
+        <div className="skeleton" style={{ width: 60, height: 28, borderRadius: 8 }}></div>
+      </div>
+      <div style={{ display: "flex", gap: 6 }}><div className="skeleton" style={{ width: 70, height: 24, borderRadius: 6 }}></div><div className="skeleton" style={{ width: 90, height: 24, borderRadius: 6 }}></div></div>
+    </div>
+  );
+
+  // --- LOGIN (✅ MULTI-TENANT: tambah field Kode Tenant) ---
+  const LoginScreen = ({ onLoginSuccess }) => {
+    const [loginId, setLoginId] = useState(localStorage.getItem('mora-login-id') || "");
+    const [pin, setPin] = useState(""); const [err, setErr] = useState("");
+    const [busy, setBusy] = useState(false);
+    const [focus, setFocus] = useState("");
+    const handleLogin = async () => {
+      if (!loginId) { setErr("Masukkan nama akun Anda."); return; }
+      if (!pin) { setErr("Masukkan PIN Anda."); return; }
+      setErr(""); setBusy(true);
+      try {
+        const res = await fetchWithTimeout(`${SCRIPT_URL}?action=login`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin,loginId})});
+        const json = await res.json();
+        // Server balikin tenantId internal (permanen) — itu yang dipakai untuk sesi & semua request.
+        if (json.success && json.authenticated) { localStorage.setItem('mora-login-id', loginId); onLoginSuccess(pin, json.tenantId); }
+        else { setErr(json.error || "Nama akun atau PIN salah."); setPin(""); setBusy(false); }
+      } catch (e) { setErr("Gagal terhubung ke server. Coba lagi."); setBusy(false); }
+    };
+    const labelStyle = { display:"block", fontSize:12, fontWeight:600, color:"#374151", marginBottom:7, letterSpacing:0.1 };
+    const inputStyle = (name) => ({
+      width:"100%", padding:"13px 15px", borderRadius:11, fontSize:15, fontWeight:500, color:"#111827",
+      border:`1.5px solid ${focus===name ? "#7C3AED" : "#E5E7EB"}`, outline:"none", boxSizing:"border-box",
+      background:"#FFFFFF", boxShadow: focus===name ? "0 0 0 3px rgba(124,58,237,0.12)" : "none",
+      transition:"border-color .15s, box-shadow .15s"
+    });
+    return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:"100vh", padding:20, fontFamily:"Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", background:"radial-gradient(120% 80% at 50% 0%, #5B21B6 0%, #3B0F7A 55%, #2E1065 100%)" }}>
+        <div style={{ width:"100%", maxWidth:380, background:"white", borderRadius:20, padding:"36px 32px 28px", boxShadow:"0 24px 64px rgba(20,0,60,0.38)" }}>
+
+          {/* Logo mark + wordmark */}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", marginBottom:30 }}>
+            <div style={{ width:56, height:56, borderRadius:16, background:"linear-gradient(135deg,#8B5CF6,#6D28D9)", display:"flex", alignItems:"center", justifyContent:"center", boxShadow:"0 8px 20px rgba(109,40,217,0.35)", marginBottom:16 }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+                <rect x="3"  y="13" width="3.5" height="8"  rx="1.4" fill="#fff" opacity="0.65"/>
+                <rect x="8.5" y="9" width="3.5" height="12" rx="1.4" fill="#fff" opacity="0.82"/>
+                <rect x="14" y="5"  width="3.5" height="16" rx="1.4" fill="#fff"/>
+                <circle cx="19.5" cy="5.5" r="2.2" fill="#fff"/>
+              </svg>
+            </div>
+            <div style={{ fontSize:23, fontWeight:800, letterSpacing:-0.5 }}>
+              <span style={{ color:"#6D28D9" }}>Mora</span><span style={{ color:"#111827" }}>Billing</span>
+            </div>
+            <div style={{ fontSize:13, color:"#6B7280", marginTop:5 }}>Manajemen penagihan pelanggan</div>
+          </div>
+
+          {/* Form */}
+          <label style={labelStyle}>Nama Akun</label>
+          <input type="text" value={loginId} onChange={e=>setLoginId(e.target.value)} onFocus={()=>setFocus("akun")} onBlur={()=>setFocus("")} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="contoh: agen-budi" autoCapitalize="none" autoCorrect="off" style={{ ...inputStyle("akun"), marginBottom:16 }}/>
+
+          <label style={labelStyle}>PIN</label>
+          <input type="password" inputMode="numeric" maxLength={8} value={pin} onChange={e=>setPin(e.target.value)} onFocus={()=>setFocus("pin")} onBlur={()=>setFocus("")} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••" style={{ ...inputStyle("pin"), marginBottom:err?10:18, letterSpacing:pin?4:0 }}/>
+
+          {err && <div style={{ fontSize:13, color:"#DC2626", marginBottom:14, fontWeight:500, lineHeight:1.4 }}>{err}</div>}
+
+          <button onClick={handleLogin} disabled={busy} style={{ width:"100%", padding:15, background:busy?"#A78BDA":"linear-gradient(135deg,#7C3AED,#5B21B6)", color:"white", border:"none", borderRadius:11, fontSize:15, fontWeight:700, cursor:busy?"default":"pointer", boxShadow:"0 6px 16px rgba(124,58,237,0.32)", transition:"opacity .15s" }}>
+            {busy ? "Memverifikasi…" : "Masuk"}
+          </button>
+
+          {/* Trust footer */}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:20, paddingTop:18, borderTop:"1px solid #F3F4F6" }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 3v6c0 4.5-3 8.3-7 9.5C8 19.3 5 15.5 5 11V5l7-3z" stroke="#9CA3AF" strokeWidth="2" strokeLinejoin="round"/></svg>
+            <span style={{ fontSize:11.5, color:"#9CA3AF", fontWeight:500 }}>Koneksi aman &amp; terenkripsi</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- ADD FORM (UNCHANGED) ---
+  const AddForm = ({ initialData, onSave, onDelete, onClose }) => {
+    const [form, setForm] = useState(initialData || { customerId:"", nama:"", noWa:"", tagihan:"", joinDate:"", statusKlien:"Aktif", catatan:"" });
+    const [tagihanUI, setTagihanUI] = useState(initialData ? formatNumberInput(initialData.tagihan) : "");
+    const [errorMsg, setErrorMsg] = useState(""); const [errorFields, setErrorFields] = useState([]);
+    const getInputStyle = (field) => ({ width:"100%", border: errorFields.includes(field)?"2px solid #DC2626":"1.5px solid #E5E7EB", borderRadius:10, padding:"11px 14px", fontSize:14, background: errorFields.includes(field)?"#FEF2F2":"#F9FAFB", marginBottom:12, fontWeight:500, color:"#111827", boxSizing:"border-box" });
+    const labelStyle = { fontSize:12, fontWeight:700, color:"#6B7280", display:"block", marginBottom:6 };
+    const handleSave = () => {
+      let errs = [];
+      if (!form.customerId) errs.push("customerId"); if (!form.nama) errs.push("nama"); if (!form.tagihan) errs.push("tagihan"); if (!form.joinDate) errs.push("joinDate");
+      if (errs.length > 0) { setErrorFields(errs); setErrorMsg("Mohon lengkapi field yang ditandai merah."); return; }
+      const isEdit = !!initialData;
+      if (!window.confirm(isEdit ? `Yakin simpan perubahan data ${form.nama}?` : `Tambah pelanggan baru: ${form.nama}?`)) return;
+      onSave({ ...form, tagihan: String(form.tagihan).replace(/\D/g, "") });
+    };
+    const scrollOnFocus = e => setTimeout(() => e.target.scrollIntoView({behavior:'smooth', block:'center'}), 300);
+    return (
+      <div className="modal-overlay" onClick={e => { if (e.target===e.currentTarget) onClose(); }}>
+        <div className="modal-content">
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            <h3 style={{ margin:0, fontSize:18, fontWeight:800 }}>{initialData ? "Edit Pelanggan" : "Pelanggan Baru"}</h3>
+            <button onClick={onClose} aria-label="Tutup" style={{ background:"#F3F4F6", border:"none", borderRadius:10, width:36, height:36, fontSize:14, fontWeight:700, color:"#6B7280" }}>✕</button>
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div><label style={labelStyle}>ID Pelanggan *</label><input style={getInputStyle("customerId")} placeholder="MR-0001" value={form.customerId} onChange={e=>setForm({...form,customerId:e.target.value.toUpperCase()})} onFocus={scrollOnFocus}/></div>
+            <div><label style={labelStyle}>Nama *</label><input style={getInputStyle("nama")} placeholder="Nama lengkap" value={form.nama} onChange={e=>setForm({...form,nama:e.target.value})} onFocus={scrollOnFocus}/></div>
+          </div>
+          <label style={labelStyle}>No. WhatsApp</label>
+          <input style={getInputStyle("noWa")} type="tel" placeholder="08xx" value={form.noWa} onChange={e=>setForm({...form,noWa:e.target.value})} onFocus={scrollOnFocus}/>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div><label style={labelStyle}>Tagihan/Bulan *</label><input type="tel" style={getInputStyle("tagihan")} placeholder="0" value={tagihanUI} onChange={e=>{setTagihanUI(formatNumberInput(e.target.value));setForm({...form,tagihan:e.target.value.replace(/\D/g,"")});}}/></div>
+            <div><label style={labelStyle}>Status</label><select style={{...getInputStyle("statusKlien"),color:"#111827"}} value={form.statusKlien} onChange={e=>setForm({...form,statusKlien:e.target.value})}><option>Aktif</option><option>Putus</option></select></div>
+          </div>
+          <label style={labelStyle}>Tanggal Pasang *</label>
+          <input type="date" style={getInputStyle("joinDate")} value={form.joinDate} onChange={e=>setForm({...form,joinDate:e.target.value})}/>
+          <label style={labelStyle}>Catatan</label>
+          <textarea style={{...getInputStyle("catatan"),height:60,resize:"none"}} placeholder="Catatan tambahan..." value={form.catatan} onChange={e=>setForm({...form,catatan:e.target.value})}/>
+          {errorMsg && <div style={{ color:"#DC2626", fontSize:13, marginBottom:12, fontWeight:600, background:"#FEF2F2", padding:10, borderRadius:8 }}>{errorMsg}</div>}
+          <div style={{ display:"flex", gap:10, marginTop:10 }}>
+            {initialData && <button onClick={()=>onDelete(initialData)} style={{ padding:"14px 20px", background:"#FEF2F2", color:"#DC2626", border:"none", borderRadius:12, fontSize:15, fontWeight:700 }}>Hapus</button>}
+            <button onClick={handleSave} style={{ flex:1, background:"linear-gradient(135deg,#7C3AED,#4C1D95)", color:"white", border:"none", borderRadius:12, padding:14, fontSize:15, fontWeight:700 }}>Simpan</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ NEW: KeuanganCard
+  const KeuanganCard = ({ item, onEdit }) => {
+    const isIn = item.tipe === 'Pemasukan';
+    return (
+      <div className="card-enter" style={{ background:"white", padding:20, borderRadius:20, boxShadow:"0 2px 8px rgba(0,0,0,0.04)", borderLeft:`5px solid ${isIn?"#10B981":"#DC2626"}`, display:"flex", flexDirection:"column" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+          <div style={{ flex:1 }}>
+            <span style={{ fontSize:11, fontWeight:800, color:isIn?"#059669":"#DC2626", background:isIn?"#ECFDF5":"#FEF2F2", padding:"3px 8px", borderRadius:6 }}>
+              {isIn ? "↑" : "↓"} {item.tipe}
+            </span>
+            <div style={{ fontSize:16, fontWeight:800, color:"#111827", marginTop:8 }}>{item.kategori}</div>
+            {item.idPelanggan && <span style={{ fontSize:11, fontWeight:700, color:"#6D28D9", background:"#EDE9FE", padding:"2px 7px", borderRadius:5, marginTop:4, display:"inline-block" }}>{item.idPelanggan}</span>}
+          </div>
+          <div style={{ textAlign:"right", flexShrink:0, paddingLeft:12 }}>
+            <div style={{ fontSize:11, color:"#9CA3AF", fontWeight:600, marginBottom:4 }}>{formatDate(item.tanggal)}</div>
+            <div style={{ fontSize:20, fontWeight:800, color:isIn?"#10B981":"#DC2626" }}>{formatRupiah(item.nominal)}</div>
+          </div>
+        </div>
+        {item.keterangan && <div style={{ fontSize:12, color:"#4B5563", padding:"8px 12px", background:"#F9FAFB", borderRadius:8, marginTop:4 }}>{item.keterangan}</div>}
+        <div style={{ paddingTop:14, borderTop:"1px dashed #E5E7EB", marginTop:14 }}>
+          <button onClick={()=>onEdit(item)} style={{ width:"100%", padding:10, background:"#F3F4F6", border:"1px solid #E5E7EB", borderRadius:10, fontSize:13, color:"#374151", fontWeight:700 }}>Edit</button>
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ NEW: KeuanganForm
+  const KeuanganForm = ({ initialData, onSave, onDelete, onClose }) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const [form, setForm] = useState(initialData || { tanggal:todayStr, tipe:'Pemasukan', kategori:KATEGORI_PEMASUKAN[0], idPelanggan:'', nominal:'', keterangan:'' });
+    const [nominalUI, setNominalUI] = useState(initialData ? formatNumberInput(initialData.nominal) : '');
+    const [errorMsg, setErrorMsg] = useState(''); const [errorFields, setErrorFields] = useState([]);
+    const getInS = (f) => ({ width:"100%", border:errorFields.includes(f)?"2px solid #DC2626":"1.5px solid #E5E7EB", borderRadius:10, padding:"11px 14px", fontSize:14, background:errorFields.includes(f)?"#FEF2F2":"#F9FAFB", marginBottom:12, fontWeight:500, color:"#111827", boxSizing:"border-box" });
+    const lbS = { fontSize:12, fontWeight:700, color:"#6B7280", display:"block", marginBottom:6 };
+    const scrollOnFocus = e => setTimeout(() => e.target.scrollIntoView({behavior:'smooth', block:'center'}), 300);
+    const kategoris = form.tipe === 'Pemasukan' ? KATEGORI_PEMASUKAN : KATEGORI_PENGELUARAN;
+    const handleTipe = (t) => setForm({ ...form, tipe:t, kategori:(t==='Pemasukan'?KATEGORI_PEMASUKAN:KATEGORI_PENGELUARAN)[0] });
+    const handleSave = () => {
+      let errs = [];
+      if (!form.tanggal) errs.push('tanggal');
+      if (!form.nominal || Number(String(form.nominal).replace(/\D/g,''))===0) errs.push('nominal');
+      if (errs.length>0) { setErrorFields(errs); setErrorMsg('Mohon lengkapi field yang ditandai.'); return; }
+      const isEdit = !!initialData;
+      if (!window.confirm(isEdit ? `Yakin simpan perubahan transaksi ini?` : `Tambah transaksi ${form.tipe} baru?`)) return;
+      onSave({ ...form, nominal: Number(String(form.nominal).replace(/\D/g,'')) });
+    };
+    return (
+      <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+        <div className="modal-content">
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            <h3 style={{ margin:0, fontSize:18, fontWeight:800 }}>{initialData?"Edit Transaksi":"Transaksi Baru"}</h3>
+            <button onClick={onClose} aria-label="Tutup" style={{ background:"#F3F4F6", border:"none", borderRadius:10, width:36, height:36, fontSize:14, fontWeight:700, color:"#6B7280" }}>✕</button>
+          </div>
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            {['Pemasukan','Pengeluaran'].map(t=>(
+              <button key={t} onClick={()=>handleTipe(t)} style={{ flex:1, padding:12, borderRadius:10, border:"none", fontWeight:700, fontSize:14, cursor:"pointer", background:form.tipe===t?(t==='Pemasukan'?'#ECFDF5':'#FEF2F2'):'#F3F4F6', color:form.tipe===t?(t==='Pemasukan'?'#059669':'#DC2626'):'#9CA3AF' }}>
+                {t==='Pemasukan'?'↑ Pemasukan':'↓ Pengeluaran'}
+              </button>
+            ))}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <label style={lbS}>Tanggal *</label>
+              <input type="date" style={{...getInS('tanggal'),marginBottom:0}} value={form.tanggal} onChange={e=>setForm({...form,tanggal:e.target.value})}/>
+            </div>
+            <div>
+              <label style={lbS}>Kategori</label>
+              <select style={{...getInS('kategori'),marginBottom:0,color:"#111827"}} value={form.kategori} onChange={e=>setForm({...form,kategori:e.target.value})}>
+                {kategoris.map(k=><option key={k} value={k}>{k}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ marginBottom:12 }}></div>
+          <label style={lbS}>Nominal (Rp) *</label>
+          <input type="tel" style={{...getInS('nominal'),fontWeight:700}} placeholder="0" value={nominalUI} onChange={e=>{ setNominalUI(formatNumberInput(e.target.value)); setForm({...form,nominal:e.target.value.replace(/\D/g,'')}); }} onFocus={scrollOnFocus}/>
+          <label style={lbS}>ID Pelanggan <span style={{ fontWeight:400, color:"#9CA3AF" }}>(opsional)</span></label>
+          <input style={getInS('idPelanggan')} placeholder="MR-0001" value={form.idPelanggan} onChange={e=>setForm({...form,idPelanggan:e.target.value.toUpperCase()})} onFocus={scrollOnFocus}/>
+          <label style={lbS}>Keterangan</label>
+          <textarea style={{...getInS('keterangan'),height:72,resize:"none"}} placeholder="Catatan singkat..." value={form.keterangan} onChange={e=>setForm({...form,keterangan:e.target.value})} onFocus={scrollOnFocus}/>
+          {errorMsg && <div style={{ color:"#DC2626", fontSize:13, marginBottom:12, fontWeight:600, background:"#FEF2F2", padding:10, borderRadius:8 }}>{errorMsg}</div>}
+          <div style={{ display:"flex", gap:10, marginTop:10 }}>
+            {initialData && <button onClick={()=>onDelete(initialData)} style={{ padding:"14px 20px", background:"#FEF2F2", color:"#DC2626", border:"none", borderRadius:12, fontSize:15, fontWeight:700 }}>Hapus</button>}
+            <button onClick={handleSave} style={{ flex:1, background:"linear-gradient(135deg,#7C3AED,#4C1D95)", color:"white", border:"none", borderRadius:12, padding:14, fontSize:15, fontWeight:700 }}>Simpan</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ NEW: RiwayatModal Component
+  const RiwayatModal = ({ pelanggan, data, loading, onClose }) => {
+    const sorted = [...data].reverse(); // terbaru di atas
+    return (
+      <div className="modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+        <div className="modal-content">
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+            <div>
+              <span style={{ fontSize:11, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", padding:"2px 8px", borderRadius:5 }}>{pelanggan.customerId}</span>
+              <div style={{ fontSize:18, fontWeight:800, color:"#111827", marginTop:6 }}>Riwayat Bayar</div>
+              <div style={{ fontSize:13, color:"#6B7280" }}>{pelanggan.nama}</div>
+            </div>
+            <button onClick={onClose} aria-label="Tutup" style={{ background:"#F3F4F6", border:"none", borderRadius:10, width:36, height:36, fontSize:14, fontWeight:700, color:"#6B7280" }}>✕</button>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign:"center", padding:"40px 0" }}>
+              <div style={{ width:24, height:24, border:"2px solid #EDE9FE", borderTopColor:"#6D28D9", borderRadius:"50%", animation:"spin 0.8s linear infinite", margin:"0 auto" }}></div>
+              <div style={{ fontSize:13, color:"#9CA3AF", marginTop:12 }}>Memuat riwayat...</div>
+            </div>
+          ) : sorted.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px 0" }}>
+              <div style={{ fontSize:36, marginBottom:10 }}>📋</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"#4B5563" }}>Belum ada riwayat bayar</div>
+              <div style={{ fontSize:12, color:"#9CA3AF", marginTop:4 }}>Riwayat muncul setelah tombol + Bayar ditekan</div>
+            </div>
+          ) : (
+            <div>
+              {/* Summary */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", background:"#EDE9FE", borderRadius:12, padding:"12px 16px", marginBottom:14 }}>
+                <div>
+                  <div style={{ fontSize:11, color:"#7C3AED", fontWeight:600 }}>Total Terbayar</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:"#6D28D9" }}>{formatRupiah(sorted.reduce((s,r)=>s+Number(r.nominal||0),0))}</div>
+                </div>
+                <div style={{ textAlign:"right" }}>
+                  <div style={{ fontSize:11, color:"#7C3AED", fontWeight:600 }}>Frekuensi</div>
+                  <div style={{ fontSize:18, fontWeight:800, color:"#6D28D9" }}>{sorted.length}x</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <div style={{ fontSize:12, color:"#6B7280", fontWeight:600 }}>Riwayat terbaru</div>
+                <button onClick={()=>exportRiwayatCSV(sorted, pelanggan)} style={{ background:"#F3F4F6", border:"1px solid #E5E7EB", borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, color:"#6D28D9" }}>⬇ Export CSV</button>
+              </div>
+              {sorted.map((r, i) => {
+                const parts = r.timestamp.split(' ');
+                const tgl = parts[0] || '';
+                const jam = parts[1] ? parts[1].slice(0,5) : '';
+                return (
+                  <div key={r.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 14px", background:i%2===0?"#F9FAFB":"white", borderRadius:10, marginBottom:6 }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>{formatRupiah(r.nominal)}</div>
+                      <div style={{ fontSize:11, color:"#9CA3AF", marginTop:2 }}>{formatDate(tgl)} {jam && `· ${jam}`}</div>
+                      {r.catatan && <div style={{ fontSize:11, color:"#6B7280", marginTop:4 }}>{r.catatan}</div>}
+                    </div>
+                    <span style={{ fontSize:10, fontWeight:800, color:"#059669", background:"#ECFDF5", padding:"3px 8px", borderRadius:6 }}>✓ LUNAS</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ Module-level constants (dipindah keluar dari component agar tidak dibuat ulang setiap render)
+  const DEFAULT_TEMPLATE = `Halo *Kak {{nama}}* 👋\nMau mengingatkan tagihan WiFi {{namaBisnis}} bulan {{bulan}} {{tahun}} sudah terbit✨\n\nID Pelanggan : *{{id}}*\nTotal        : *{{nominal}}*\nJatuh Tempo  : *{{jatuhTempo}}*\n\nMohon segera melakukan pembayaran sebelum jatuh tempo agar layanan tidak terputus ya Kak\n\nApabila ada kendala harap segera menghubungi/komunikasi dengan {{namaSales}}.\n\nTerima kasih😊🙏🏻`;
+  const PLACEHOLDERS = [
+    { key:'{{nama}}',       desc:'Nama pelanggan' },
+    { key:'{{id}}',         desc:'ID pelanggan' },
+    { key:'{{nominal}}',    desc:'Total tagihan (Rp)' },
+    { key:'{{bulan}}',      desc:'Bulan berjalan' },
+    { key:'{{tahun}}',      desc:'Tahun berjalan' },
+    { key:'{{jatuhTempo}}', desc:'Tanggal jatuh tempo' },
+    { key:'{{namaBisnis}}', desc:'Nama bisnis' },
+    { key:'{{namaSales}}',  desc:'Nama sales' },
+  ];
+
+  // ✅ NEW: InstallCard — tombol install PWA atau instruksi manual sesuai platform
+  const InstallCard = () => {
+    const [canInstall, setCanInstall] = useState(false);
+    const [installed, setInstalled] = useState(false);
+    useEffect(() => {
+      const check = () => setCanInstall(!!window.__moraInstallPrompt);
+      check();
+      const interval = setInterval(check, 800); // beforeinstallprompt bisa datang belakangan
+      window.addEventListener('appinstalled', () => setInstalled(true));
+      return () => clearInterval(interval);
+    }, []);
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    const handleInstall = async () => {
+      const promptEvent = window.__moraInstallPrompt;
+      if (!promptEvent) return;
+      promptEvent.prompt();
+      await promptEvent.userChoice;
+      window.__moraInstallPrompt = null;
+      setCanInstall(false);
+    };
+
+    if (installed || isStandalone) {
+      return (
+        <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:6 }}>📲 Aplikasi</div>
+          <div style={{ fontSize:12, color:"#059669", fontWeight:600 }}>✓ Sudah terinstall di perangkat ini</div>
+        </div>
+      );
+    }
+
+    return (
+      <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+        <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:6 }}>📲 Aplikasi</div>
+        {canInstall ? (
+          <React.Fragment>
+            <div style={{ fontSize:12, color:"#6B7280", marginBottom:12 }}>Install MoraBilling ke homescreen agar lebih cepat diakses, seperti app biasa.</div>
+            <button onClick={handleInstall} style={{ width:"100%", padding:13, background:"linear-gradient(135deg,#7C3AED,#4C1D95)", color:"white", border:"none", borderRadius:12, fontSize:14, fontWeight:700 }}>Install ke Homescreen</button>
+          </React.Fragment>
+        ) : isIOS ? (
+          <div style={{ fontSize:12, color:"#6B7280", lineHeight:1.7 }}>
+            Buka menu <b>Share</b> (kotak dengan panah ke atas) di Safari → pilih <b>"Add to Home Screen"</b>.
+          </div>
+        ) : (
+          <div style={{ fontSize:12, color:"#6B7280", lineHeight:1.7 }}>
+            Buka menu <b>⋮</b> di browser → pilih <b>"Install app"</b> atau <b>"Add to Home Screen"</b>.
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // ✅ NEW: SettingsPage Component
+  const SettingsPage = ({ settings, saving, onSave, onChangePin, onChangeUsername, onLogout }) => {
+    const [acc, setAcc] = useState({ pinBaru:'', pinKonf:'', username:'' });
+    const [accBusy, setAccBusy] = useState(false);
+    const submitPin = () => {
+      if(acc.pinBaru.length<4){ alert("PIN baru minimal 4 digit."); return; }
+      if(acc.pinBaru!==acc.pinKonf){ alert("Konfirmasi PIN tidak cocok."); return; }
+      setAccBusy(true);
+      onChangePin(acc.pinBaru, (ok)=>{ setAccBusy(false); if(ok) setAcc({...acc,pinBaru:'',pinKonf:''}); });
+    };
+    const submitUsername = () => {
+      if(!acc.username.trim()){ alert("Username tidak boleh kosong."); return; }
+      setAccBusy(true);
+      onChangeUsername(acc.username.trim(), (ok)=>{ setAccBusy(false); if(ok) setAcc({...acc,username:''}); });
+    };
+    const [form, setForm] = useState({
+      namaBisnis: settings.namaBisnis || '',
+      namaSales:  settings.namaSales  || '',
+      pesanWA:    settings.pesanWA    || DEFAULT_TEMPLATE
+    });
+    useEffect(() => {
+      setForm({
+        namaBisnis: settings.namaBisnis || '',
+        namaSales:  settings.namaSales  || '',
+        pesanWA:    settings.pesanWA    || DEFAULT_TEMPLATE
+      });
+    }, [settings]);
+
+    const inS = { width:"100%", border:"1.5px solid #E5E7EB", borderRadius:10, padding:"11px 14px", fontSize:14, background:"#F9FAFB", marginBottom:12, fontWeight:500, color:"#111827", boxSizing:"border-box", fontFamily:"var(--font)" };
+    const lbS = { fontSize:12, fontWeight:700, color:"#6B7280", display:"block", marginBottom:6 };
+
+    // Warn kalau placeholder penting hilang
+    const missingWarn = ['{{nama}}','{{nominal}}'].filter(ph => !form.pesanWA.includes(ph));
+
+    // Live preview dengan data contoh
+    const preview = form.pesanWA
+      .replace(/{{nama}}/g,        'Budi Santoso')
+      .replace(/{{id}}/g,          'MR-0001')
+      .replace(/{{nominal}}/g,     'Rp 250.000')
+      .replace(/{{bulan}}/g,       'Juni')
+      .replace(/{{tahun}}/g,       '2026')
+      .replace(/{{jatuhTempo}}/g,  '10 Juni 2026')
+      .replace(/{{namaBisnis}}/g,  form.namaBisnis || 'Nama Bisnis')
+      .replace(/{{namaSales}}/g,   form.namaSales  || 'Nama Sales');
+
+    return (
+      <div className="content-wrap" style={{ padding:"20px 16px" }}>
+
+        {/* Identitas */}
+        <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:14 }}>🏢 Identitas Bisnis</div>
+          <label style={lbS}>Nama Bisnis</label>
+          <input style={inS} placeholder="MyRepublic" value={form.namaBisnis} onChange={e=>setForm({...form,namaBisnis:e.target.value})}/>
+          <label style={lbS}>Nama Sales / PIC</label>
+          <input style={{...inS,marginBottom:0}} placeholder="Nama kamu" value={form.namaSales} onChange={e=>setForm({...form,namaSales:e.target.value})}/>
+        </div>
+
+        {/* Template Pesan WA */}
+        <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:4 }}>💬 Template Pesan WA</div>
+          <div style={{ fontSize:12, color:"#6B7280", marginBottom:12 }}>Gunakan placeholder di bawah — otomatis diganti data pelanggan saat kirim WA.</div>
+
+          {/* Placeholder guide */}
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginBottom:12 }}>
+            {PLACEHOLDERS.map(ph=>(
+              <div key={ph.key} style={{ background:"#EDE9FE", borderRadius:6, padding:"4px 8px" }}>
+                <div style={{ fontSize:11, fontWeight:800, color:"#6D28D9" }}>{ph.key}</div>
+                <div style={{ fontSize:10, color:"#7C3AED" }}>{ph.desc}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Textarea */}
+          <textarea
+            value={form.pesanWA}
+            onChange={e=>setForm({...form,pesanWA:e.target.value})}
+            onFocus={e=>setTimeout(()=>e.target.scrollIntoView({behavior:'smooth',block:'center'}),300)}
+            rows={12}
+            style={{ width:"100%", border:"1.5px solid #E5E7EB", borderRadius:10, padding:"11px 14px", fontSize:13, background:"#F9FAFB", fontFamily:"monospace", resize:"vertical", boxSizing:"border-box", color:"#111827", lineHeight:1.6, minHeight:"200px" }}
+          />
+
+          {/* Warning */}
+          {missingWarn.length > 0 && (
+            <div style={{ background:"#FFFBEB", border:"1px solid #FDE68A", borderRadius:10, padding:"10px 12px", marginTop:8 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#D97706" }}>⚠️ Peringatan</div>
+              <div style={{ fontSize:12, color:"#92400E", marginTop:2 }}>{missingWarn.join(' dan ')} tidak ditemukan di template — info ini tidak akan muncul di pesan WA.</div>
+            </div>
+          )}
+
+          {/* Reset */}
+          <button onClick={()=>setForm({...form,pesanWA:DEFAULT_TEMPLATE})} style={{ marginTop:10, width:"100%", padding:10, background:"#F3F4F6", border:"1px solid #E5E7EB", borderRadius:10, fontSize:12, color:"#6B7280", fontWeight:700 }}>
+            ↩ Reset ke Template Bawaan
+          </button>
+        </div>
+
+        {/* Live Preview */}
+        <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:10 }}>👁️ Preview Pesan</div>
+          <div style={{ background:"#ECF8F1", borderRadius:12, padding:14, fontSize:12, color:"#111827", lineHeight:1.7, whiteSpace:"pre-wrap", fontFamily:"monospace", borderLeft:"3px solid #25D366" }}>{preview}</div>
+          <div style={{ fontSize:11, color:"#9CA3AF", marginTop:8 }}>Data contoh — pesan asli menggunakan data pelanggan nyata</div>
+        </div>
+
+        {/* Simpan semua */}
+        <button onClick={()=>onSave(form)} disabled={saving} style={{ width:"100%", padding:14, background:saving?"#E5E7EB":"linear-gradient(135deg,#7C3AED,#4C1D95)", color:saving?"#9CA3AF":"white", border:"none", borderRadius:12, fontSize:15, fontWeight:700, marginBottom:14 }}>
+          {saving ? "Menyimpan..." : "Simpan Semua Pengaturan"}
+        </button>
+
+        {/* ✅ NEW: Install ke Homescreen */}
+        <InstallCard />
+
+        {/* ✅ NEW: Akun — Ganti PIN & Username */}
+        <div style={{ background:"white", borderRadius:20, padding:20, marginBottom:14, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:14 }}>👤 Akun</div>
+
+          <div style={{ fontSize:12, fontWeight:700, color:"#6B7280", marginBottom:6 }}>Ganti PIN</div>
+          <input type="password" inputMode="numeric" maxLength={8} value={acc.pinBaru} onChange={e=>setAcc({...acc,pinBaru:e.target.value})} placeholder="PIN baru (4-8 digit)" style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:"1.5px solid #E5E7EB", fontSize:14, marginBottom:8, boxSizing:"border-box", color:"#111827" }}/>
+          <input type="password" inputMode="numeric" maxLength={8} value={acc.pinKonf} onChange={e=>setAcc({...acc,pinKonf:e.target.value})} placeholder="Konfirmasi PIN baru" style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:"1.5px solid #E5E7EB", fontSize:14, marginBottom:8, boxSizing:"border-box", color:"#111827" }}/>
+          <button onClick={submitPin} disabled={accBusy} style={{ width:"100%", padding:12, background:accBusy?"#E5E7EB":"#7C3AED", color:accBusy?"#9CA3AF":"white", border:"none", borderRadius:10, fontSize:14, fontWeight:700, marginBottom:18 }}>{accBusy?"Memproses...":"Simpan PIN Baru"}</button>
+
+          <div style={{ fontSize:12, fontWeight:700, color:"#6B7280", marginBottom:6 }}>Ganti Username (untuk login)</div>
+          <input type="text" value={acc.username} onChange={e=>setAcc({...acc,username:e.target.value})} placeholder="Username baru" style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:"1.5px solid #E5E7EB", fontSize:14, marginBottom:8, boxSizing:"border-box", color:"#111827" }}/>
+          <button onClick={submitUsername} disabled={accBusy} style={{ width:"100%", padding:12, background:accBusy?"#E5E7EB":"#7C3AED", color:accBusy?"#9CA3AF":"white", border:"none", borderRadius:10, fontSize:14, fontWeight:700 }}>{accBusy?"Memproses...":"Simpan Username Baru"}</button>
+          <div style={{ fontSize:11, color:"#9CA3AF", marginTop:8 }}>Username untuk login. Huruf & angka, otomatis jadi format slug (mis: "Agen Budi" → "agen-budi"). Lain kali login pakai username baru ini.</div>
+        </div>
+
+        {/* Logout */}
+        <div style={{ background:"white", borderRadius:20, padding:20, boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ fontSize:14, fontWeight:800, color:"#111827", marginBottom:6 }}>🔐 Sesi</div>
+          <div style={{ fontSize:12, color:"#6B7280", marginBottom:14 }}>Logout akan menghapus sesi di perangkat ini. Data tidak akan terhapus.</div>
+          <button onClick={onLogout} style={{ width:"100%", padding:14, background:"#FEF2F2", color:"#DC2626", border:"1px solid #FCA5A5", borderRadius:12, fontSize:15, fontWeight:700 }}>Logout</button>
+        </div>
+
+      </div>
+    );
+  };
+
+  // --- APP ---
+  const App = () => {
+    // === BILLING STATES (UNCHANGED) ===
+    const [sessionPin, setSessionPin] = useState(null);
+    const [sessionTenantId, setSessionTenantId] = useState(null); // ✅ MULTI-TENANT
+    const [pelanggan, setPelanggan] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const [filter, setFilter] = useState("semua");
+    const [visibleCount, setVisibleCount] = useState(ITEM_PER_PAGE);
+    const [showForm, setShowForm] = useState(false);
+    const [editItem, setEditItem] = useState(null);
+    const [toast, setToast] = useState(null);
+
+    // ✅ NEW: Keuangan states
+    const [currentPage, setCurrentPage] = useState('billing');
+    const [keuangan, setKeuangan] = useState([]);
+    const [loadingK, setLoadingK] = useState(false);
+    const [kFilter, setKFilter] = useState('semua');
+    const [katFilter, setKatFilter] = useState('semua');
+    const [bulanFilter, setBulanFilter] = useState(() => { const n=new Date(); return {year:n.getFullYear(),month:n.getMonth()}; });
+    const [showKForm, setShowKForm] = useState(false);
+    const [editKItem, setEditKItem] = useState(null);
+
+    // ✅ NEW: Settings states
+    const [appSettings, setAppSettings] = useState({ namaBisnis: 'MyRepublic', namaSales: 'Cahyo' });
+    const [savingSettings, setSavingSettings] = useState(false);
+
+    // ✅ NEW: Riwayat states
+    const [showRiwayat, setShowRiwayat] = useState(false);
+    const [riwayatPelanggan, setRiwayatPelanggan] = useState(null);
+    const [riwayatData, setRiwayatData] = useState([]);
+    const [loadingRiwayat, setLoadingRiwayat] = useState(false);
+
+    // ✅ NEW: Bug fixes & small improvements
+    const [keuanganLoaded, setKeuanganLoaded] = useState(false);
+    const [lastSync, setLastSync] = useState(null);
+    const [searchK, setSearchK] = useState('');
+    const [debouncedSearchK, setDebouncedSearchK] = useState('');
+    const [visibleCountK, setVisibleCountK] = useState(ITEM_PER_PAGE);
+
+    // ✅ NEW: Billing Rekap states
+    const [billingView, setBillingView] = useState('pelanggan');
+    const [bulanRekap, setBulanRekap] = useState(() => { const n=new Date(); return {year:n.getFullYear(),month:n.getMonth()}; });
+
+    // === BILLING EFFECTS (UNCHANGED) ===
+    useEffect(() => {
+      if (!sessionPin) return;
+      try { const cached=localStorage.getItem(STORAGE_KEY); if(cached) setPelanggan(JSON.parse(cached)); } catch(e) {}
+      fetchData();
+    }, [sessionPin]);
+    useEffect(() => { const h=setTimeout(()=>{setDebouncedSearch(search);setVisibleCount(ITEM_PER_PAGE);},300); return()=>clearTimeout(h); }, [search]);
+    useEffect(() => { setVisibleCount(ITEM_PER_PAGE); }, [filter]);
+
+    // ✅ NEW effects
+    useEffect(() => { if(currentPage==='keuangan'&&sessionPin&&!keuanganLoaded) fetchKeuangan(); }, [currentPage,sessionPin,keuanganLoaded]);
+    useEffect(() => { if(sessionPin) fetchSettings(); }, [sessionPin]);
+    useEffect(() => { setKatFilter('semua'); setVisibleCountK(ITEM_PER_PAGE); }, [kFilter]);
+    useEffect(() => { setVisibleCountK(ITEM_PER_PAGE); }, [bulanFilter, katFilter, debouncedSearchK]);
+    useEffect(() => { const h=setTimeout(()=>setDebouncedSearchK(searchK),300); return()=>clearTimeout(h); }, [searchK]);
+
+    // Fix 4: Session expiry — auto logout setelah 8 jam
+    useEffect(() => {
+      if (!sessionPin) return;
+      const SESSION_MS = 8 * 60 * 60 * 1000;
+      const LOGIN_TS_KEY = 'mora-login-ts';
+      const interval = setInterval(() => {
+        const ts = localStorage.getItem(LOGIN_TS_KEY);
+        if (!ts || Date.now() - Number(ts) > SESSION_MS) {
+          localStorage.removeItem(LOGIN_TS_KEY);
+          localStorage.removeItem(STORAGE_KEY);
+          setSessionPin(null); setSessionTenantId(null); setPelanggan([]); setKeuangan([]);
+          setKeuanganLoaded(false); setLastSync(null);
+          setLoading(false); setLoadingK(false);
+          setShowForm(false); setShowKForm(false); setShowRiwayat(false);
+          setCurrentPage('billing'); setBillingView('pelanggan');
+          setSearch(''); setFilter('semua');
+          setKFilter('semua'); setKatFilter('semua');
+          setSearchK(''); setDebouncedSearchK('');
+          setEditItem(null); setEditKItem(null);
+          setRiwayatData([]); setRiwayatPelanggan(null);
+          alert('Sesi berakhir (8 jam). Silakan login kembali.');
+        }
+      }, 5 * 60 * 1000);
+      return () => clearInterval(interval);
+    }, [sessionPin]);
+
+    // ✅ NEW (UX fix): Tombol back Android menutup modal, bukan keluar app
+    const modalOpenRef = useRef(false);
+    useEffect(() => {
+      const isOpen = showForm || showKForm || showRiwayat;
+      if (isOpen && !modalOpenRef.current) {
+        window.history.pushState({ moraModal: true }, '');
+      }
+      modalOpenRef.current = isOpen;
+    }, [showForm, showKForm, showRiwayat]);
+    useEffect(() => {
+      const handlePopState = () => {
+        if (modalOpenRef.current) {
+          setShowForm(false); setEditItem(null);
+          setShowKForm(false); setEditKItem(null);
+          setShowRiwayat(false); setRiwayatPelanggan(null); setRiwayatData([]);
+        }
+      };
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
+    // === BILLING FUNCTIONS (UNCHANGED) ===
+    const showMsg = (msg, type="success") => { setToast({msg,type}); if(type!=="loading") setTimeout(()=>setToast(null),2500); };
+    const fetchData = () => {
+      setLoading(true);
+      fetchWithTimeout(`${SCRIPT_URL}?action=getAll`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId})}).then(r=>r.json()).then(json=>{
+        if(json.success){ setPelanggan(json.data); localStorage.setItem(STORAGE_KEY,JSON.stringify(json.data)); setLastSync(new Date()); }
+        else showMsg(json.error,"error");
+        setLoading(false);
+      }).catch(err=>{ showMsg(err.message||"Gagal sinkron. Cek koneksi.","error"); setLoading(false); });
+    };
+    const callServerAction = (actionParams, payload=null, successMsg) => {
+      showMsg("Memproses di Server...","loading");
+      const body = payload ? { pin:sessionPin, tenantId:sessionTenantId, data:payload } : { pin:sessionPin, tenantId:sessionTenantId };
+      const opts = {method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(body)};
+      fetchWithTimeout(`${SCRIPT_URL}?${actionParams}`,opts).then(r=>r.json()).then(json=>{
+        if(json.success){ showMsg(successMsg); setPelanggan(json.data); localStorage.setItem(STORAGE_KEY,JSON.stringify(json.data)); setLastSync(new Date()); }
+        else showMsg("Server Error: "+json.error,"error");
+      }).catch(err=>showMsg(err.message||"Gagal menghubungi server.","error"));
+    };
+    // ✅ FIXED: Tambah/Edit/Hapus pelanggan sekarang kirim SATU item ke action atomic server,
+    // bukan seluruh array — mencegah data pelanggan lain hilang kalau state lokal belum lengkap.
+    const callServerActionItem = (action, payload, successMsg) => {
+      showMsg("Memproses di Server...","loading");
+      fetchWithTimeout(`${SCRIPT_URL}?action=${action}`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId,...payload})}).then(r=>r.json()).then(json=>{
+        if(json.success){ showMsg(successMsg); setPelanggan(json.data); localStorage.setItem(STORAGE_KEY,JSON.stringify(json.data)); setLastSync(new Date()); }
+        else showMsg("Server Error: "+json.error,"error");
+      }).catch(err=>showMsg(err.message||"Gagal menghubungi server.","error"));
+    };
+    const handleSave = (dataToSave) => {
+      const isEdit=!!dataToSave.id;
+      setShowForm(false); setEditItem(null);
+      if(isEdit) callServerActionItem('updatePelanggan',{item:dataToSave},"Data Tersimpan di Server!");
+      else callServerActionItem('addPelanggan',{item:dataToSave},"Data Tersimpan di Server!");
+    };
+    const catatBayar = (p) => {
+      if(!window.confirm(`Catat 1x pembayaran untuk ${p.nama}?`)) return;
+      if(typeof vibe!=="undefined") vibe();
+      callServerAction(`action=bayar&id=${p.id}`,null,"Pembayaran 1 Bulan Dicatat Server!");
+    };
+    const batalBayar = (p) => {
+      if(!window.confirm(`Batalkan 1x pembayaran untuk ${p.nama}?`)) return;
+      if(typeof vibe!=="undefined") vibe();
+      callServerAction(`action=batal&id=${p.id}`,null,"Pembayaran Dibatalkan Server!");
+    };
+    const handleDelete = (p) => {
+      if(!window.confirm("Hapus data ini permanen?")) return;
+      setShowForm(false);
+      callServerActionItem('deletePelanggan',{id:p.id},"Data Dihapus Secara Permanen!");
+    };
+
+    // ✅ NEW: Keuangan functions
+    const fetchKeuangan = () => {
+      setLoadingK(true);
+      fetchWithTimeout(`${SCRIPT_URL}?action=getKeuangan`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId})}).then(r=>r.json()).then(json=>{
+        if(json.success){ setKeuangan(json.data); setKeuanganLoaded(true); }
+        else showMsg(json.error,"error");
+        setLoadingK(false);
+      }).catch(err=>{ showMsg(err.message||"Gagal fetch data keuangan.","error"); setLoadingK(false); });
+    };
+    // ✅ FIXED: 3 fungsi terpisah, masing-masing kirim SATU item ke action atomic server.
+    // Tidak lagi mengirim seluruh array — kalau state lokal sempat belum lengkap, data lama tidak akan tertimpa/hilang.
+    const callKeuanganAtomic = (action, payload, successMsg) => {
+      showMsg("Menyimpan...","loading");
+      fetchWithTimeout(`${SCRIPT_URL}?action=${action}`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId,...payload})})
+        .then(r=>r.json()).then(json=>{
+          if(json.success){ setKeuangan(json.data); showMsg(successMsg); }
+          else showMsg("Error: "+json.error,"error");
+        }).catch(err=>showMsg(err.message||"Gagal menghubungi server.","error"));
+    };
+    const handleSaveK = (dataToSave) => {
+      const isEdit=!!dataToSave.id;
+      const item={...dataToSave,id:dataToSave.id||String(Date.now())};
+      setShowKForm(false); setEditKItem(null);
+      if(isEdit) callKeuanganAtomic('updateKeuangan',{item},"Transaksi Diupdate!");
+      else callKeuanganAtomic('addKeuangan',{item},"Transaksi Tersimpan!");
+    };
+    const handleDeleteK = (item) => {
+      if(!window.confirm("Hapus transaksi ini?")) return;
+      setShowKForm(false); setEditKItem(null);
+      callKeuanganAtomic('deleteKeuangan',{id:item.id},"Transaksi Dihapus!");
+    };
+    const navBulan = (dir) => setBulanFilter(prev=>{ let m=prev.month+dir,y=prev.year; if(m<0){m=11;y--;} if(m>11){m=0;y++;} return{year:y,month:m}; });
+    const navBulanRekap = (dir) => setBulanRekap(prev=>{ let m=prev.month+dir,y=prev.year; if(m<0){m=11;y--;} if(m>11){m=0;y++;} return{year:y,month:m}; });
+
+    // ✅ NEW: Settings functions
+    const fetchSettings = () => {
+      fetchWithTimeout(`${SCRIPT_URL}?action=getSettings`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId})})
+        .then(r=>r.json()).then(json=>{ if(json.success) setAppSettings(json.data); })
+        .catch(()=>{});
+    };
+    // ✅ Ganti PIN sendiri: server verifikasi PIN lama (= sessionPin) lalu update hash.
+    const handleChangePin = (newPin, onDone) => {
+      fetchWithTimeout(`${SCRIPT_URL}?action=changePin`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId,newPin})})
+        .then(r=>r.json()).then(json=>{
+          if(json.success){ setSessionPin(newPin); showMsg("PIN berhasil diganti!"); onDone&&onDone(true); }
+          else { showMsg("Gagal: "+json.error,"error"); onDone&&onDone(false); }
+        }).catch(err=>{ showMsg(err.message||"Gagal menghubungi server.","error"); onDone&&onDone(false); });
+    };
+    // ✅ Ganti username (label login). tenant_id internal tetap, sesi tidak putus.
+    const handleChangeUsername = (newUsername, onDone) => {
+      fetchWithTimeout(`${SCRIPT_URL}?action=changeUsername`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId,newUsername})})
+        .then(r=>r.json()).then(json=>{
+          if(json.success){ localStorage.setItem('mora-login-id', json.username); showMsg("Username berhasil diganti!"); onDone&&onDone(true); }
+          else { showMsg("Gagal: "+json.error,"error"); onDone&&onDone(false); }
+        }).catch(err=>{ showMsg(err.message||"Gagal menghubungi server.","error"); onDone&&onDone(false); });
+    };
+    const handleSaveSettings = (data) => {
+      setSavingSettings(true);
+      fetchWithTimeout(`${SCRIPT_URL}?action=saveSettings`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId,data})})
+        .then(r=>r.json()).then(json=>{
+          if(json.success){ setAppSettings(json.data); showMsg("Pengaturan Tersimpan!"); }
+          else showMsg("Gagal simpan: "+json.error,"error");
+          setSavingSettings(false);
+        }).catch(err=>{ showMsg(err.message||"Gagal menghubungi server.","error"); setSavingSettings(false); });
+    };
+    const handleLogout = () => {
+      if(!window.confirm("Yakin mau logout?")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('mora-login-ts');
+      setSessionPin(null); setSessionTenantId(null); setPelanggan([]); setKeuangan([]);
+      setKeuanganLoaded(false); setLastSync(null);
+      setLoading(false); setLoadingK(false);
+      setShowForm(false); setShowKForm(false); setShowRiwayat(false);
+      setCurrentPage('billing'); setBillingView('pelanggan');
+      setSearch(''); setFilter('semua');
+      setKFilter('semua'); setKatFilter('semua');
+      setSearchK(''); setDebouncedSearchK('');
+      setEditItem(null); setEditKItem(null);
+      setRiwayatData([]); setRiwayatPelanggan(null);
+    };
+
+    // ✅ NEW: Fetch riwayat per pelanggan
+    const fetchRiwayat = (p) => {
+      setRiwayatPelanggan(p);
+      setShowRiwayat(true);
+      setLoadingRiwayat(true);
+      setRiwayatData([]);
+      fetchWithTimeout(`${SCRIPT_URL}?action=getRiwayat&customerId=${p.customerId}`,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify({pin:sessionPin,tenantId:sessionTenantId})})
+        .then(r=>r.json()).then(json=>{
+          if(json.success) setRiwayatData(json.data);
+          else showMsg(json.error,"error");
+          setLoadingRiwayat(false);
+        }).catch(err=>{ showMsg(err.message||"Gagal load riwayat.","error"); setLoadingRiwayat(false); });
+    };
+
+    // === BILLING MEMOS (UNCHANGED) ===
+    const stats = useMemo(() => {
+      let lunas=0,belum=0,total=0,totalPotensi=0,jtHariIni=0,putus=0;
+      pelanggan.forEach(p=>{
+        if(p.statusKlien==="Putus"){ putus++; return; }
+        total++; totalPotensi+=Number(p.tagihan||0);
+        if(p.crm&&p.crm.nunggak===0) lunas++; else belum++;
+        if(p.status && p.status.phase==='jatuh_tempo' && /sisa 0 hari/.test(p.status.label||'')) jtHariIni++;
+      });
+      return {lunas,belum,total,totalPotensi,jtHariIni,putus};
+    },[pelanggan]);
+    const filtered = useMemo(() => {
+      return pelanggan.filter(p=>{
+        const m=(p.nama||"").toLowerCase().includes(debouncedSearch.toLowerCase())||(p.customerId||"").toLowerCase().includes(debouncedSearch.toLowerCase());
+        if(!m) return false;
+        if(filter==="putus") return p.statusKlien==="Putus";
+        if(p.statusKlien==="Putus") return false;
+        // ✅ NEW: Filter cepat — JT hari ini (sisa 0 hari, belum telat)
+        if(filter==="jtHariIni") return p.status && p.status.phase==='jatuh_tempo' && /sisa 0 hari/.test(p.status.label||'');
+        const nunggak=p.crm?p.crm.nunggak:0, usia=p.crm?p.crm.usia:1, bayar=p.crm?p.crm.bayar:0;
+        if(filter==="lunas") return nunggak===0; if(filter==="belum") return nunggak>0;
+        if(filter==="c1") return usia>=1&&usia<=3; if(filter==="c4") return usia>=4&&usia<=6;
+        if(filter==="c7") return usia>=7&&usia<=12; if(filter==="c12") return usia>12;
+        if(filter==="b0") return bayar>=0&&bayar<=3; if(filter==="b4") return bayar>=4&&bayar<=6;
+        if(filter==="b7") return bayar>=7&&bayar<=12; if(filter==="b12") return bayar>12;
+        return true;
+      }).sort((a,b)=>{
+        const nA=a.crm?a.crm.nunggak:0, nB=b.crm?b.crm.nunggak:0;
+        if(nA!==nB) return nB-nA;
+        const uA=a.status?a.status.urgent:false, uB=b.status?b.status.urgent:false;
+        if(uA!==uB) return uA?-1:1;
+        return (a.crm?a.crm.tglTerbit:1)-(b.crm?b.crm.tglTerbit:1);
+      });
+    },[pelanggan,filter,debouncedSearch]);
+
+    // ✅ NEW: Keuangan memos
+    const filteredK = useMemo(() => {
+      return keuangan.filter(k=>{
+        const d=new Date(k.tanggal); if(isNaN(d.getTime())) return false;
+        if(d.getFullYear()!==bulanFilter.year||d.getMonth()!==bulanFilter.month) return false;
+        if(kFilter==='pemasukan'&&k.tipe!=='Pemasukan') return false;
+        if(kFilter==='pengeluaran'&&k.tipe!=='Pengeluaran') return false;
+        if(katFilter!=='semua'&&k.kategori!==katFilter) return false;
+        // Fix 5: search filter
+        if(debouncedSearchK.trim()){
+          const q=debouncedSearchK.toLowerCase();
+          const match=(k.kategori||'').toLowerCase().includes(q)||(k.keterangan||'').toLowerCase().includes(q)||(k.idPelanggan||'').toLowerCase().includes(q);
+          if(!match) return false;
+        }
+        return true;
+      }).sort((a,b)=>new Date(b.tanggal)-new Date(a.tanggal));
+    },[keuangan,bulanFilter,kFilter,katFilter,debouncedSearchK]);
+    const statsK = useMemo(() => {
+      const ofBulan=keuangan.filter(k=>{ const d=new Date(k.tanggal); return !isNaN(d.getTime())&&d.getFullYear()===bulanFilter.year&&d.getMonth()===bulanFilter.month; });
+      const masuk=ofBulan.filter(k=>k.tipe==='Pemasukan').reduce((s,k)=>s+Number(k.nominal||0),0);
+      const keluar=ofBulan.filter(k=>k.tipe==='Pengeluaran').reduce((s,k)=>s+Number(k.nominal||0),0);
+      return {masuk,keluar,net:masuk-keluar};
+    },[keuangan,bulanFilter]);
+    const katOptions = useMemo(()=>{ if(kFilter==='pemasukan') return KATEGORI_PEMASUKAN; if(kFilter==='pengeluaran') return KATEGORI_PENGELUARAN; return []; },[kFilter]);
+
+    // ✅ NEW: Rekap Bulan billing memo
+    const rekapStats = useMemo(() => {
+      const yr = bulanRekap.year;
+      const mo = bulanRekap.month; // 0-indexed
+
+      // Parse "YYYY-MM-DD" tanpa Date object — hindari timezone bug sepenuhnya
+      const parseJoin = (joinDate) => {
+        if (!joinDate) return null;
+        const p = String(joinDate).split('-');
+        if (p.length !== 3) return null;
+        return { year: parseInt(p[0]), month: parseInt(p[1]) - 1, day: parseInt(p[2]) };
+      };
+
+      const aktif = pelanggan.filter(p => {
+        if (!p.joinDate || p.statusKlien === 'Putus') return false;
+        const d = parseJoin(p.joinDate); if (!d) return false;
+        return d.year < yr || (d.year === yr && d.month <= mo);
+      });
+
+      const baru = pelanggan.filter(p => {
+        const d = parseJoin(p.joinDate); if (!d) return false;
+        return d.year === yr && d.month === mo;
+      });
+
+      const totalTagihan = aktif.reduce((s,p) => s + Number(p.tagihan||0), 0);
+      const now = new Date();
+      const isCurMonth = yr === now.getFullYear() && mo === now.getMonth();
+
+      let aman=0, jatuhTempo=0, telatBayar=0, suspend=0;
+      if (isCurMonth) {
+        aktif.forEach(p => {
+          const ph = p.status ? p.status.phase : 'normal';
+          if (ph==='normal') aman++;
+          else if (ph==='jatuh_tempo') jatuhTempo++;
+          else if (ph==='telat') telatBayar++;
+          else if (ph==='suspend') suspend++;
+        });
+      }
+
+      return { jumlahAktif:aktif.length, totalTagihan, pelangganBaru:baru.length, newCustomers:baru, aman, jatuhTempo, telatBayar, suspend, isCurMonth };
+    }, [pelanggan, bulanRekap]);
+
+    if (!sessionPin) return <LoginScreen onLoginSuccess={(pin,tenantId)=>{ localStorage.setItem('mora-login-ts', Date.now().toString()); setSessionPin(pin); setSessionTenantId(tenantId); }} />;
+
+    return (
+      <div>
+        {/* ===== BILLING PAGE (UNCHANGED) ===== */}
+        {currentPage==='billing' && (
+          <div className="app-wrap">
+            <div className="top-banner">
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, letterSpacing:2, opacity:0.7, textTransform:"uppercase", fontWeight:700 }}>Customer Management</div>
+                  <div style={{ fontSize:24, fontWeight:800, display:"flex", alignItems:"center", gap:8 }}>MoraBilling <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ opacity:0.55 }}><path d="M12 2l7 3v6c0 4.5-3 8.3-7 9.5C8 19.3 5 15.5 5 11V5l7-3z" stroke="#fff" strokeWidth="2" strokeLinejoin="round"/></svg></div>
+                  {lastSync && <div style={{ fontSize:10, opacity:0.6, marginTop:2 }}>Sync: {lastSync.getHours().toString().padStart(2,'0')}:{lastSync.getMinutes().toString().padStart(2,'0')}</div>}
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
+                  <button onClick={()=>{ if(typeof vibe!=="undefined") vibe(); setEditItem(null); setShowForm(true); }} className="desktop-action" style={{ background:"white", border:"none", borderRadius:10, padding:"7px 14px", color:"#6D28D9", fontSize:12, fontWeight:800, cursor:"pointer" }}><span style={{ fontSize:16, lineHeight:1, fontWeight:400 }}>+</span> Tambah Pelanggan</button>
+                  <button onClick={()=>exportToCSV(pelanggan)} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:10, padding:"6px 10px", color:"white", fontSize:11, fontWeight:700 }}>Export CSV</button>
+                  <button onClick={fetchData} disabled={loading} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:10, padding:"6px 10px", color:"white", fontSize:11, fontWeight:700 }}>{loading?"Syncing...":"↻ Refresh"}</button>
+                </div>
+              </div>
+              <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 12px", marginTop:10, display:"grid", gridTemplateColumns:"1fr 1fr", gap:0 }}>
+                <div style={{ textAlign:"center", paddingRight:8 }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:"#34D399" }}>{stats.lunas}</div>
+                  <div style={{ fontSize:10, opacity:0.8, fontWeight:600, marginTop:2 }}>Lunas</div>
+                </div>
+                <div style={{ textAlign:"center", borderLeft:"1px solid rgba(255,255,255,0.2)", paddingLeft:8 }}>
+                  <div style={{ fontSize:20, fontWeight:800, color:"#FCA5A5" }}>{stats.belum}</div>
+                  <div style={{ fontSize:10, opacity:0.8, fontWeight:600, marginTop:2 }}>Nunggak</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky-controls">
+              {/* ✅ NEW: View toggle */}
+              <div style={{ display:"flex", gap:6, gridColumn:"1/-1" }}>
+                {[['pelanggan','Pelanggan'],['rekap','Rekap Bulan']].map(([v,l])=>(
+                  <button key={v} onClick={()=>setBillingView(v)} style={{ flex:1, padding:"9px", borderRadius:10, border:"1px solid #E5E7EB", fontSize:12, fontWeight:700, background:billingView===v?"#111827":"white", color:billingView===v?"white":"#6B7280" }}>{l}</button>
+                ))}
+              </div>
+              {billingView==='pelanggan' && <React.Fragment>
+              <div style={{ position:"relative" }}>
+                <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", display:"flex", pointerEvents:"none" }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+                <input placeholder="Cari nama atau ID..." value={search} onChange={e=>setSearch(e.target.value)} style={{ width:"100%", padding:"12px 36px 12px 40px", borderRadius:12, border:"1px solid #E5E7EB", fontSize:14, fontWeight:500, background:"white", color:"#111827", boxSizing:"border-box" }}/>
+                {search && <button onClick={()=>setSearch('')} aria-label="Hapus pencarian" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", fontSize:16, color:"#9CA3AF", cursor:"pointer", padding:4, lineHeight:1 }}>✕</button>}
+              </div>
+              <div className="filter-scroll">
+                {[
+                  ['semua',`Semua${stats.total>0?` (${stats.total})`:''}`],
+                  ['jtHariIni',`JT Hari Ini${stats.jtHariIni>0?` (${stats.jtHariIni})`:''}`],
+                  ['belum',`Ada Tagihan${stats.belum>0?` (${stats.belum})`:''}`],
+                  ['lunas',`Lunas${stats.lunas>0?` (${stats.lunas})`:''}`],
+                  ['putus',`Churn${stats.putus>0?` (${stats.putus})`:''}`]
+                ].map(([v,l])=>{
+                  const isJT = v==='jtHariIni';
+                  const highlight = isJT && stats.jtHariIni>0 && filter!==v;
+                  return (
+                    <button key={v} onClick={()=>setFilter(v)} style={{ padding:"8px 14px", borderRadius:20, border:highlight?"1px solid #D97706":"1px solid #E5E7EB", fontSize:12, fontWeight:700, background:filter===v?"#111827":highlight?"#FFFBEB":"white", color:filter===v?"white":highlight?"#D97706":"#6B7280", whiteSpace:"nowrap" }}>{l}</button>
+                  );
+                })}
+              </div>
+              </React.Fragment>}
+            </div>
+            {/* ===== REKAP BULAN VIEW ===== */}
+            {billingView==='rekap' && (
+              <div className="content-wrap" style={{ padding:"0 16px" }}>
+                {/* Month nav */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"white", borderRadius:16, padding:"14px 16px", marginBottom:14 }}>
+                  <button onClick={()=>navBulanRekap(-1)} aria-label="Bulan sebelumnya" style={{ background:"#F3F4F6", border:"none", borderRadius:8, width:36, height:36, fontSize:18, cursor:"pointer" }}>‹</button>
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:"#111827" }}>{BULAN_NAMES[bulanRekap.month]} {bulanRekap.year}</div>
+                    {!rekapStats.isCurMonth && <div style={{ fontSize:11, color:"#9CA3AF", marginTop:2 }}>Status berdasarkan data terkini</div>}
+                  </div>
+                  <button onClick={()=>navBulanRekap(1)} aria-label="Bulan berikutnya" style={{ background:"#F3F4F6", border:"none", borderRadius:8, width:36, height:36, fontSize:18, cursor:"pointer" }}>›</button>
+                </div>
+
+                {/* Main stats */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+                  <div style={{ background:"white", borderRadius:14, padding:"14px 10px", textAlign:"center" }}>
+                    <div style={{ fontSize:22, fontWeight:800, color:"#6D28D9" }}>{rekapStats.jumlahAktif}</div>
+                    <div style={{ fontSize:10, color:"#6B7280", fontWeight:600, marginTop:4 }}>Aktif</div>
+                  </div>
+                  <div style={{ background:"white", borderRadius:14, padding:"14px 10px", textAlign:"center" }}>
+                    <div style={{ fontSize:22, fontWeight:800, color:"#F59E0B" }}>{rekapStats.pelangganBaru}</div>
+                    <div style={{ fontSize:10, color:"#6B7280", fontWeight:600, marginTop:4 }}>Pelanggan Baru</div>
+                  </div>
+                </div>
+
+                {/* Status breakdown — hanya bulan berjalan */}
+                {rekapStats.isCurMonth && (
+                  <div style={{ background:"white", borderRadius:16, padding:16, marginBottom:14 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#374151", marginBottom:12 }}>Status Bulan Ini</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      {[['#ECFDF5','#059669',rekapStats.aman,'AMAN'],['#FFFBEB','#D97706',rekapStats.jatuhTempo,'JATUH TEMPO'],['#FFF7ED','#F97316',rekapStats.telatBayar,'TELAT BAYAR'],['#FEF2F2','#DC2626',rekapStats.suspend,'SUSPEND']].map(([bg,color,val,label])=>(
+                        <div key={label} style={{ background:bg, borderRadius:10, padding:"12px 8px", textAlign:"center" }}>
+                          <div style={{ fontSize:24, fontWeight:800, color }}>{val}</div>
+                          <div style={{ fontSize:10, color, fontWeight:700, marginTop:4 }}>{label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pelanggan baru bulan ini */}
+                {rekapStats.newCustomers.length > 0 ? (
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#374151", marginBottom:10 }}>🆕 Pelanggan Baru {BULAN_NAMES[bulanRekap.month]}</div>
+                    <div style={{ display:"grid", gap:10 }}>
+                      {rekapStats.newCustomers.map(p=>(
+                        <div key={p.id} style={{ background:"white", borderRadius:14, padding:14, display:"flex", justifyContent:"space-between", alignItems:"center", borderLeft:"4px solid #6D28D9" }}>
+                          <div>
+                            <div style={{ display:"flex", gap:6, alignItems:"center", marginBottom:4 }}>
+                              <span style={{ fontSize:11, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", padding:"2px 7px", borderRadius:5 }}>{p.customerId}</span>
+                            </div>
+                            <div style={{ fontSize:14, fontWeight:800, color:"#111827" }}>{p.nama}</div>
+                            <div style={{ fontSize:11, color:"#9CA3AF", marginTop:2 }}>Pasang: {formatDate(p.joinDate)}</div>
+                          </div>
+                          <div style={{ textAlign:"right" }}>
+                            <div style={{ fontSize:16, fontWeight:800, color:"#10B981" }}>{formatRupiah(p.tagihan)}</div>
+                            <div style={{ fontSize:10, color:"#9CA3AF", marginTop:2 }}>/bulan</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign:"center", padding:"30px 0", color:"#9CA3AF" }}>
+                    <div style={{ fontSize:30, marginBottom:8 }}>📭</div>
+                    <div style={{ fontSize:13, fontWeight:600 }}>Tidak ada pelanggan baru bulan ini</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===== PELANGGAN LIST VIEW ===== */}
+            {billingView==='pelanggan' && <React.Fragment>
+            <div className="customer-grid">
+              {loading&&pelanggan.length===0 ? (
+                <React.Fragment><SkeletonLoader/><SkeletonLoader/><SkeletonLoader/></React.Fragment>
+              ) : filtered.length===0&&!loading ? (
+                <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"60px 20px" }}>
+                  <div style={{ fontSize:36, marginBottom:12 }}>🔍</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:"#4B5563", marginBottom:6 }}>
+                    {debouncedSearch?`Tidak ada hasil untuk "${debouncedSearch}"`:"Tidak ada pelanggan di filter ini"}
+                  </div>
+                  <div style={{ fontSize:13, color:"#9CA3AF", marginBottom:16 }}>Coba ubah kata kunci atau pilih filter lain</div>
+                  {debouncedSearch&&<button onClick={()=>setSearch('')} style={{ padding:"10px 20px", background:"#EDE9FE", color:"#6D28D9", border:"none", borderRadius:10, fontSize:13, fontWeight:700 }}>Hapus Pencarian</button>}
+                </div>
+              ) : filtered.slice(0,visibleCount).map(p=>{
+                const isPutus=p.statusKlien==="Putus";
+                const crm=p.crm||{usia:1,bayar:0,nunggak:0,tglTerbit:1};
+                const status=p.status||{label:"Aman",color:"#059669",urgent:false};
+                return (
+                  <div key={p.id} className="card-enter" style={{ background:"white", padding:20, borderRadius:20, boxShadow:"0 2px 8px rgba(0,0,0,0.04)", borderLeft:`5px solid ${isPutus?"#9CA3AF":(status.color||"#10B981")}`, opacity:isPutus?0.6:1, filter:isPutus?"grayscale(100%)":"none", display:"flex", flexDirection:"column" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:16 }}>
+                      <div>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center", marginBottom:8 }}>
+                          <span style={{ fontSize:11, fontWeight:800, color:"#6D28D9", background:"#EDE9FE", padding:"3px 8px", borderRadius:6 }}>{p.customerId}</span>
+                          <span style={{ fontSize:10, fontWeight:700, background:"#F3F4F6", color:"#4B5563", padding:"3px 8px", borderRadius:6 }}>Pasang: {formatDate(p.joinDate)}</span>
+                          {/* ✅ NEW: Status tag */}
+                          {!isPutus && status.tag && status.tag!=='AMAN' && (
+                            <span style={{ fontSize:10, fontWeight:800, padding:"3px 8px", borderRadius:6, background:status.phase==='suspend'?'#FEF2F2':status.phase==='telat'?'#FFF7ED':'#FFFBEB', color:status.phase==='suspend'?'#DC2626':status.phase==='telat'?'#F97316':'#D97706' }}>{status.tag}</span>
+                          )}
+                        </div>
+                        <div style={{ fontSize:18, fontWeight:800, color:"#111827", textDecoration:isPutus?"line-through":"none" }}>{p.nama}</div>
+                        <div style={{ fontSize:13, color:"#6B7280", marginTop:4, fontWeight:500 }}>{p.noWa}</div>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:18, fontWeight:800, color:isPutus?"#6B7280":(crm.nunggak===0?"#10B981":"#111827"), textDecoration:isPutus?"line-through":"none" }}>{formatRupiah(p.tagihan)}</div>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      <span style={{ background:"#F3F4F6", color:"#374151", padding:"4px 8px", borderRadius:6, fontSize:10, fontWeight:700 }}>Usia: {crm.usia} Bln</span>
+                      <span style={{ background:crm.bayar===0?"#F3F4F6":"#ECFDF5", color:crm.bayar===0?"#6B7280":"#059669", padding:"4px 8px", borderRadius:6, fontSize:10, fontWeight:700 }}>Total Bayar: {crm.bayar}x</span>
+                      {crm.nunggak>0&&!isPutus&&<span style={{ background:"#FEF2F2", color:"#DC2626", padding:"4px 8px", borderRadius:6, fontSize:10, fontWeight:800 }}>Nunggak {crm.nunggak} Bln</span>}
+                    </div>
+                    {p.catatan&&<div style={{ fontSize:12, color:"#4B5563", marginTop:12, padding:"8px 12px", background:"#FFFBEB", borderLeft:"3px solid #D97706", borderRadius:6, fontWeight:500 }}>Catatan: {p.catatan}</div>}
+                    <div style={{ marginTop:"auto" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:16, paddingTop:16, borderTop:"1px dashed #E5E7EB" }}>
+                        <div style={{ fontSize:11, color:"#6B7280", fontWeight:500 }}>Terbit Tgl <b style={{ color:"#111827" }}>{crm.tglTerbit}</b></div>
+                        {!isPutus&&crm.nunggak===0&&<span style={{ background:"#ECFDF5", color:"#059669", padding:"4px 10px", borderRadius:12, fontSize:10, fontWeight:800 }}>Aman</span>}
+                      </div>
+                      {!isPutus&&crm.nunggak>0&&<div style={{ fontSize:12, color:status.color, fontWeight:800, marginTop:8, textAlign:"right" }}>{status.label}</div>}
+                      <div style={{ display:"flex", flexDirection:"column", gap:8, marginTop:16 }}>
+                        {!isPutus && (
+                          <a href={p.waLink} target="_blank" onClick={()=>showMsg('WhatsApp dibuka, pesan siap dikirim')} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:status.urgent?"#DC2626":"#10B981", color:"white", padding:13, borderRadius:10, fontSize:13, fontWeight:700, textDecoration:"none" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>Kirim Reminder</a>
+                        )}
+                        <div style={{ display:"flex", gap:8 }}>
+                          {!isPutus && (
+                            <React.Fragment>
+                              <button onClick={()=>batalBayar(p)} disabled={crm.bayar<=0} style={{ width:44, height:44, background:crm.bayar<=0?"#F9FAFB":"#FEF2F2", color:crm.bayar<=0?"#D1D5DB":"#DC2626", border:crm.bayar<=0?"1px solid #F3F4F6":"1px solid #FCA5A5", borderRadius:10, fontSize:20, fontWeight:800, cursor:crm.bayar<=0?"not-allowed":"pointer", flexShrink:0 }}>−</button>
+                              <button onClick={()=>catatBayar(p)} disabled={crm.nunggak===0} style={{ flex:1, height:44, background:crm.nunggak===0?"#E5E7EB":"#ECFDF5", color:crm.nunggak===0?"#9CA3AF":"#059669", border:"none", borderRadius:10, fontSize:13, fontWeight:700, cursor:crm.nunggak===0?"not-allowed":"pointer" }}>{crm.nunggak===0?"✓ Lunas":"+ Bayar"}</button>
+                            </React.Fragment>
+                          )}
+                          <button onClick={()=>fetchRiwayat(p)} style={{ flex:0.5, height:44, background:"#EDE9FE", border:"1px solid #DDD6FE", borderRadius:10, fontSize:12, color:"#6D28D9", fontWeight:700 }}>Log</button>
+                          <button onClick={()=>{ if(typeof vibe!=="undefined") vibe(); setEditItem({...p}); setShowForm(true); }} style={{ flex:isPutus?1:0.5, height:44, background:"#F3F4F6", border:"1px solid #E5E7EB", borderRadius:10, fontSize:12, color:"#374151", fontWeight:700 }}>Edit</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {filtered.length>0&&!loading&&(
+              <div style={{ textAlign:"center", fontSize:12, color:"#9CA3AF", padding:"4px 0 4px", fontWeight:500 }}>
+                Menampilkan {Math.min(visibleCount,filtered.length)} dari {filtered.length} pelanggan
+              </div>
+            )}
+            {visibleCount<filtered.length&&!loading&&<button className="load-more-btn" onClick={()=>setVisibleCount(v=>v+ITEM_PER_PAGE)}>Tampilkan Lebih Banyak &darr;</button>}
+            </React.Fragment>}
+          </div>
+        )}
+
+        {/* ===== KEUANGAN PAGE ===== */}
+        {currentPage==='keuangan' && (
+          <div className="app-wrap">
+            <div className="top-banner">
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, letterSpacing:2, opacity:0.7, textTransform:"uppercase", fontWeight:700 }}>Keuangan Sales</div>
+                  <div style={{ fontSize:24, fontWeight:800 }}>MoraBilling</div>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
+                  <button onClick={()=>{ setEditKItem(null); setShowKForm(true); }} className="desktop-action" style={{ background:"white", border:"none", borderRadius:10, padding:"7px 14px", color:"#6D28D9", fontSize:12, fontWeight:800, cursor:"pointer" }}><span style={{ fontSize:16, lineHeight:1, fontWeight:400 }}>+</span> Catat Transaksi</button>
+                  <button onClick={()=>exportKeuanganCSV(keuangan, bulanFilter.month, bulanFilter.year)} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:10, padding:"6px 10px", color:"white", fontSize:11, fontWeight:700 }}>Export CSV</button>
+                  <button onClick={()=>{ setKeuanganLoaded(false); }} disabled={loadingK} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:10, padding:"6px 10px", color:"white", fontSize:11, fontWeight:700 }}>{loadingK?"Syncing...":"↻ Refresh"}</button>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, marginTop:10 }}>
+                  <button onClick={()=>navBulan(-1)} aria-label="Bulan sebelumnya" style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:8, color:"white", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                  <button onClick={()=>{ const n=new Date(); setBulanFilter({year:n.getFullYear(),month:n.getMonth()}); }} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, color:"white", padding:"6px 10px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    {BULAN_SHORT[bulanFilter.month]} {bulanFilter.year}
+                  </button>
+                  <button onClick={()=>navBulan(1)} aria-label="Bulan berikutnya" style={{ background:"rgba(255,255,255,0.2)", border:"none", borderRadius:8, color:"white", width:34, height:34, fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+              </div>
+              <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:16, padding:15, marginTop:20 }}>
+                <div style={{ fontSize:12, opacity:0.8, marginBottom:10 }}>{BULAN_NAMES[bulanFilter.month]} {bulanFilter.year}</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                  <div style={{ background:"rgba(16,185,129,0.2)", borderRadius:10, padding:10, textAlign:"center" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#34D399", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{formatRupiah(statsK.masuk)}</div>
+                    <div style={{ fontSize:10, opacity:0.9, marginTop:4, fontWeight:600 }}>↑ Masuk</div>
+                  </div>
+                  <div style={{ background:"rgba(239,68,68,0.2)", borderRadius:10, padding:10, textAlign:"center" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#FCA5A5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{formatRupiah(statsK.keluar)}</div>
+                    <div style={{ fontSize:10, opacity:0.9, marginTop:4, fontWeight:600 }}>↓ Keluar</div>
+                  </div>
+                  <div style={{ background:statsK.net>=0?"rgba(16,185,129,0.2)":"rgba(239,68,68,0.2)", borderRadius:10, padding:10, textAlign:"center" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:statsK.net>=0?"#34D399":"#FCA5A5", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{formatRupiah(Math.abs(statsK.net))}</div>
+                    <div style={{ fontSize:10, opacity:0.9, marginTop:4, fontWeight:600 }}>Net {statsK.net>=0?"+":"-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="content-wrap" style={{ position:"sticky", top:0, zIndex:40, background:"#F3F4F6", padding:"15px 16px 10px", boxShadow:"0 4px 6px -1px rgba(0,0,0,0.05)", borderBottomLeftRadius:16, borderBottomRightRadius:16, marginBottom:16 }}>
+              {/* Search */}
+              <div style={{ position:"relative", marginBottom:8 }}>
+                <span style={{ position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", display:"flex", pointerEvents:"none" }}><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></span>
+                <input placeholder="Cari kategori, keterangan, ID..." value={searchK} onChange={e=>setSearchK(e.target.value)} style={{ width:"100%", padding:"10px 36px 10px 38px", borderRadius:12, border:"1px solid #E5E7EB", fontSize:13, fontWeight:500, background:"white", color:"#111827", boxSizing:"border-box" }}/>
+                {searchK && <button onClick={()=>setSearchK('')} aria-label="Hapus pencarian" style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", fontSize:16, color:"#9CA3AF", cursor:"pointer", padding:4, lineHeight:1 }}>✕</button>}
+              </div>
+              <div className="filter-scroll">
+                {[['semua','Semua'],['pemasukan','↑ Pemasukan'],['pengeluaran','↓ Pengeluaran']].map(([v,l])=>(
+                  <button key={v} onClick={()=>setKFilter(v)} style={{ padding:"8px 14px", borderRadius:20, border:"1px solid #E5E7EB", fontSize:12, fontWeight:700, background:kFilter===v?"#111827":"white", color:kFilter===v?"white":"#6B7280", whiteSpace:"nowrap" }}>{l}</button>
+                ))}
+              </div>
+              {kFilter!=='semua' && (
+                <div style={{ marginTop:8 }}>
+                  <select value={katFilter} onChange={e=>setKatFilter(e.target.value)} style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:"1px solid #E5E7EB", fontSize:13, fontWeight:600, background:"white", color:"#111827", outline:"none" }}>
+                    <option value="semua">Semua Kategori</option>
+                    {katOptions.map(k=><option key={k} value={k}>{k}</option>)}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="customer-grid">
+              {loadingK ? (
+                <React.Fragment><SkeletonLoader/><SkeletonLoader/></React.Fragment>
+              ) : filteredK.length===0 ? (
+                <div style={{ gridColumn:"1 / -1", textAlign:"center", padding:"60px 20px" }}>
+                  <div style={{ fontSize:40, marginBottom:12 }}>💸</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:"#4B5563", marginBottom:6 }}>Belum ada transaksi</div>
+                  <div style={{ fontSize:13, color:"#9CA3AF" }}>{debouncedSearchK ? `Tidak ada hasil untuk "${debouncedSearchK}"` : kFilter==='semua'?'Tap + untuk catat pemasukan atau pengeluaran':`Tidak ada data ${kFilter} bulan ini`}</div>
+                </div>
+              ) : filteredK.slice(0,visibleCountK).map(item=><KeuanganCard key={item.id} item={item} onEdit={(it)=>{ setEditKItem(it); setShowKForm(true); }}/>)}
+            </div>
+            {filteredK.length>0&&!loadingK&&(
+              <div style={{ textAlign:"center", fontSize:12, color:"#9CA3AF", padding:"4px 0 4px", fontWeight:500 }}>
+                Menampilkan {Math.min(visibleCountK,filteredK.length)} dari {filteredK.length} transaksi
+              </div>
+            )}
+            {visibleCountK<filteredK.length&&!loadingK&&(
+              <button className="load-more-btn" onClick={()=>setVisibleCountK(v=>v+ITEM_PER_PAGE)}>Tampilkan Lebih Banyak &darr;</button>
+            )}
+          </div>
+        )}
+
+        {/* ===== SETTINGS PAGE ===== */}
+        {currentPage==='settings' && (
+          <div className="app-wrap">
+            <div className="top-banner">
+              <div style={{ fontSize:11, letterSpacing:2, opacity:0.7, textTransform:"uppercase", fontWeight:700 }}>Pengaturan</div>
+              <div style={{ fontSize:24, fontWeight:800 }}>MoraBilling</div>
+            </div>
+            <SettingsPage
+              settings={appSettings}
+              saving={savingSettings}
+              onSave={handleSaveSettings}
+              onChangePin={handleChangePin}
+              onChangeUsername={handleChangeUsername}
+              onLogout={handleLogout}
+            />
+          </div>
+        )}
+
+        {/* FAB Billing — naik ke bottom: 88 agar tidak tertutup nav */}
+        {currentPage==='billing' && (
+          <button className="fab-btn" onClick={()=>{ if(typeof vibe!=="undefined") vibe(); setEditItem(null); setShowForm(true); }}
+            style={{ width:60, height:60, borderRadius:30, background:"linear-gradient(135deg,#7C3AED,#4C1D95)", color:"white", border:"none", fontSize:32, fontWeight:300, boxShadow:"0 4px 15px rgba(76,29,149,0.4)", zIndex:50, cursor:"pointer" }}>+</button>
+        )}
+
+        {/* FAB Keuangan */}
+        {currentPage==='keuangan' && (
+          <button className="fab-btn" onClick={()=>{ setEditKItem(null); setShowKForm(true); }}
+            style={{ width:60, height:60, borderRadius:30, background:"linear-gradient(135deg,#7C3AED,#4C1D95)", color:"white", border:"none", fontSize:32, fontWeight:300, boxShadow:"0 4px 15px rgba(76,29,149,0.4)", zIndex:50, cursor:"pointer" }}>+</button>
+        )}
+
+        {/* Bottom Navigation */}
+        <nav className="bottom-nav">
+          {[
+            ['billing', 'M9 5h6a1 1 0 011 1v0a1 1 0 001 1h1a1 1 0 011 1v11a1 1 0 01-1 1H6a1 1 0 01-1-1V8a1 1 0 011-1h1a1 1 0 001-1v0a1 1 0 011-1zM9 5a1 1 0 011-1h4a1 1 0 011 1M9 12h6M9 16h4', 'Billing'],
+            ['keuangan', 'M3 8h18a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V9a1 1 0 011-1zM3 8l2-4h14l2 4M16 13h2', 'Keuangan'],
+            ['settings', 'M12 9a3 3 0 100 6 3 3 0 000-6zM19 12a7 7 0 00-.13-1.3l2-1.5-2-3.4-2.3 1a7 7 0 00-2.27-1.3L13.7 2h-3.4l-.33 2.5a7 7 0 00-2.27 1.3l-2.3-1-2 3.4 2 1.5A7 7 0 005 12a7 7 0 00.13 1.3l-2 1.5 2 3.4 2.3-1a7 7 0 002.27 1.3l.33 2.5h3.4l.33-2.5a7 7 0 002.27-1.3l2.3 1 2-3.4-2-1.5A7 7 0 0019 12z']
+          ].map(([page,d,label])=>{
+            const on = currentPage===page;
+            return (
+              <button key={page} onClick={()=>setCurrentPage(page)}
+                style={{ borderTop:`2px solid ${on?'#6D28D9':'transparent'}` }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={on?'#6D28D9':'#9CA3AF'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>
+                <span style={{ fontSize:11, fontWeight:700, color:on?'#6D28D9':'#9CA3AF' }}>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {showForm && <AddForm initialData={editItem} onSave={handleSave} onDelete={handleDelete} onClose={()=>{ setEditItem(null); setShowForm(false); }}/>}
+        {showKForm && <KeuanganForm initialData={editKItem} onSave={handleSaveK} onDelete={handleDeleteK} onClose={()=>{ setEditKItem(null); setShowKForm(false); }}/>}
+        {showRiwayat && riwayatPelanggan && <RiwayatModal pelanggan={riwayatPelanggan} data={riwayatData} loading={loadingRiwayat} onClose={()=>{ setShowRiwayat(false); setRiwayatPelanggan(null); setRiwayatData([]); }}/>}
+
+        {/* Toast — naik ke bottom: 90 agar aman dari bottom-nav mobile (64px) maupun pill nav desktop (78px) */}
+        {toast && (
+          <div style={{ position:"fixed", bottom:90, left:"50%", transform:"translateX(-50%)", background:toast.type==="error"?"#DC2626":toast.type==="loading"?"#4C1D95":"#111827", color:"white", padding:"12px 24px", borderRadius:12, fontSize:13, fontWeight:700, boxShadow:"0 4px 15px rgba(0,0,0,0.2)", zIndex:200, display:"flex", alignItems:"center", gap:10 }}>
+            {toast.type==="loading"&&<span className="spinner"></span>}
+            {toast.msg}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
